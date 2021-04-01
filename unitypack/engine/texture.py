@@ -5,6 +5,7 @@ from .object import Object, field
 
 
 from .ETC2ImagePlugin import ETC2Decoder
+from tex2img import decompress_astc
 
 class TextureFormat(IntEnum):
 	Alpha8 = 1
@@ -66,6 +67,40 @@ class TextureFormat(IntEnum):
 	ASTC_RGBA_10x10 = 58
 	ASTC_RGBA_12x12 = 59
 
+	@staticmethod
+	def ASTC_FORMATS():
+		return (
+			TextureFormat.ASTC_RGB_4x4,
+			TextureFormat.ASTC_RGB_5x5,
+			TextureFormat.ASTC_RGB_6x6,
+			TextureFormat.ASTC_RGB_8x8,
+			TextureFormat.ASTC_RGB_10x10,
+			TextureFormat.ASTC_RGB_12x12,
+			TextureFormat.ASTC_RGBA_4x4,
+			TextureFormat.ASTC_RGBA_5x5,
+			TextureFormat.ASTC_RGBA_6x6,
+			TextureFormat.ASTC_RGBA_8x8,
+			TextureFormat.ASTC_RGBA_10x10,
+			TextureFormat.ASTC_RGBA_12x12,
+		)
+
+	@property
+	def astc_block_size(self):
+		if self in (TextureFormat.ASTC_RGB_4x4, TextureFormat.ASTC_RGBA_4x4):
+			return 4
+		elif self in (TextureFormat.ASTC_RGB_5x5, TextureFormat.ASTC_RGBA_5x5):
+			return 5
+		elif self in (TextureFormat.ASTC_RGB_6x6, TextureFormat.ASTC_RGBA_6x6):
+			return 6
+		elif self in (TextureFormat.ASTC_RGB_8x8, TextureFormat.ASTC_RGBA_8x8):
+			return 8
+		elif self in (TextureFormat.ASTC_RGB_10x10, TextureFormat.ASTC_RGBA_10x10):
+			return 10
+		elif self in (TextureFormat.ASTC_RGB_12x12, TextureFormat.ASTC_RGBA_12x12):
+			return 12
+		else:
+			raise NotImplementedError('Unsupported ASTC block size')
+
 	@property
 	def pixel_format(self):
 		if self == TextureFormat.RGB24:
@@ -104,6 +139,18 @@ IMPLEMENTED_FORMATS = (
 	TextureFormat.ETC2_RGB,
 	TextureFormat.ETC2_RGBA1,
 	TextureFormat.ETC2_RGBA8,
+	TextureFormat.ASTC_RGB_4x4,
+	TextureFormat.ASTC_RGB_5x5,
+	TextureFormat.ASTC_RGB_6x6,
+	TextureFormat.ASTC_RGB_8x8,
+	TextureFormat.ASTC_RGB_10x10,
+	TextureFormat.ASTC_RGB_12x12,
+	TextureFormat.ASTC_RGBA_4x4,
+	TextureFormat.ASTC_RGBA_5x5,
+	TextureFormat.ASTC_RGBA_6x6,
+	TextureFormat.ASTC_RGBA_8x8,
+	TextureFormat.ASTC_RGBA_10x10,
+	TextureFormat.ASTC_RGBA_12x12,
 )
 
 
@@ -194,6 +241,9 @@ class Texture2D(Texture):
 		data = self.image_data
 		if self.format in (TextureFormat.DXT1Crunched, TextureFormat.DXT5Crunched):
 			data = CrunchFile(self.image_data).decode_level(0)
+		if self.format in TextureFormat.ASTC_FORMATS():
+			block_sz = self.format.astc_block_size
+			data = decompress_astc(data, self.width, self.height, block_sz, block_sz, False)
 
 		# Pillow wants bytes, not bytearrays
 		data = bytes(data)

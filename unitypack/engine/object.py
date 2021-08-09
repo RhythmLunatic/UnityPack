@@ -5,7 +5,11 @@ def field(f, cast=None, **kwargs):
 		else:
 			ret = self._obj[f]
 		if cast:
-			ret = cast(ret)
+			try:
+				ret = cast(ret)
+			except ValueError:
+				print("The value "+str(ret)+" is not present in the enum/cast "+str(cast)+". This usually means you're dealing with an unknown file compression type.")
+				raise ValueError
 		return ret
 	return property(_inner)
 

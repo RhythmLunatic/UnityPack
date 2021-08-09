@@ -1,0 +1,60 @@
+# UnityFS file structure
+
+struct HEADER {
+    string header<bgcolor=cGreen>;
+    uint32 version;
+    string minimumPlayerVersion<fgcolor=cYellow>;
+    string fileEngineVersion<fgcolor=cYellow>;
+} header;
+
+struct UnityFile {
+    uint64 totalFileSize;
+    uint32 compressedSize;
+    uint32 decompressedSize;
+    uint32 flags<read=showFlags>;
+    
+    byte compressedMetadata[compressedSize];
+} unityFile;
+
+compressedMetadata is compressed based on flags, do `flags & 0x3F` to calculate the compression flag
+
+Compression flags:
+NONE = 0
+LZMA = 1
+LZ4 = 2
+LZ4HC = 3
+LZHAM = 4
+
+Girls' Frontline uses LZ4HC.
+
+After decompressing the compressed metadata with whatever it says it uses, this struct
+defines the metadata:
+
+BigEndian();
+char guid[16];
+int numBlocks<bgcolor=cYellow>;
+local int i;
+for(i=0;i<numBlocks;i++)
+{
+    struct BlockMetadata {
+        int UncompressedSize;
+        int CompressedSize;
+        int16 bflags; //Identical to UnityFile flags, also describes block compression method.
+    } blockMetadata<fgcolor=cLtPurple>;
+}
+int numNodes<bgcolor=cYellow>;
+for(i=0;i<numNodes;i++)
+{
+    struct Node {
+        int64 fileOffset;
+        int64 size;
+        int status;
+        string name;
+    } node<fgcolor=cGreen>;
+}
+
+At this point we've seeked to the end of the metadata and now we're at the start of the file sections
+in the unityFS.
+
+(TODO...)
+
